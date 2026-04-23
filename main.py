@@ -1,14 +1,12 @@
 import os
 from dotenv import load_dotenv
-from scraper import fetch_website_contents
-from IPython.display import Markdown, display
+from IPython.display import Markdown
+import requests
 from openai import OpenAI
-
+from scraper import fetch_website_contents
 load_dotenv(override=True)
 api_key = os.getenv('OPENAI_API_KEY')
-
 # Check the key
-
 if not api_key:
     print("No API key was found - please head over to the troubleshooting notebook in this folder to identify & fix!")
 elif not api_key.startswith("sk-proj-"):
@@ -18,6 +16,8 @@ elif api_key.strip() != api_key:
 else:
     print("API key found and looks good so far!")
 
+
+requests.get("http://localhost:11434").content
 system_prompt = """You are a Legal Analyst. Your task is to summarize legal contracts that is
  provided by the user. I want you to focus on extracting key points,
  financial terms, termination clauses, and potential risks. Present the summary
@@ -34,18 +34,16 @@ user_prompt = """
    that would complement this agreement for better legel protection.
    For formar: pleaase use very concise, numbered bullet points. Keep the tone formal.
 """
-
-
-def n(website):
-     messages= [{"role":"system","content":system_prompt},{"role":"system","content":user_prompt+website}] # fill this in
-     return messages
+message=[{"role":"system","content":system_prompt},{"role":"user","content":system_prompt}]
 def summarize(url):
-   url_content=fetch_website_contents(url)
-   response =openai.chat.completions.create(model="gpt-4.1-mini",messages=n(url_content))
-   return response.choices[0].message.content
+    The_feched_content=fetch_website_contents(url)
+    message=[{"role":"system","content":system_prompt},{"role":"user","content":user_prompt+ The_feched_content}]
+    ollama=OpenAI(base_url="http://localhost:11434/v1",api_key="ollama")
+    response= ollama.chat.completions.create(model="deepseek-r1:1.5b",messages=message)
+    return response.choices[0].message.content
 
-def display_summary(url):
-   summmary=summarize(url)
-   display(Markdown(summmary))
 
-print(display_summary("https://www.lawinsider.com/contracts/1Yr9baZLxHq"))
+def summarize2(url):
+   summary=summarize(url)
+   display(Markdown(summary))
+print(summarize2("https://www.lawinsider.com/contracts/1Yr9baZLxHq"))
